@@ -1,0 +1,151 @@
+<?php
+
+class Auth {
+
+    // ── Register ─────────────────────────────────
+
+    public static function register() {
+        verifyCsrfToken();
+
+        // read inputs
+        $username = post('username');
+        $email    = post('email');
+        $password = post('password');
+        $confirm  = post('password_confirm');
+
+        // keep old values in case of error
+        $old = [
+            'username' => $username,
+            'email'    => $email
+        ];
+
+        // ── Validation ───────────────────────────
+
+        if (empty($username) || empty($email) || empty($password) || empty($confirm)) {
+            $error = 'All fields are required.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/register.php';
+            return;
+        }
+
+        if (strlen($username) < 3 || strlen($username) > 50) {
+            $error = 'Username must be between 3 and 50 characters.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/register.php';
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/register.php';
+            return;
+        }
+
+        if (strlen($password) < 8) {
+            $error = 'Password must be at least 8 characters.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/register.php';
+            return;
+        }
+
+        if ($password !== $confirm) {
+            $error = 'Passwords do not match.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/register.php';
+            return;
+        }
+
+        // ── Check duplicates ─────────────────────
+
+        $pdo = getDB();
+
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? OR email = ?');
+        $stmt->execute([$username, $email]);
+        $existing = $stmt->fetch();
+
+        if ($existing) {
+            $error = 'Username or email is already taken.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/register.php';
+            return;
+        }
+
+        // ── Create user ──────────────────────────
+
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+
+        $stmt = $pdo->prepare('
+            INSERT INTO users (username, email, password_hash)
+            VALUES (?, ?, ?)
+        ');
+        $stmt->execute([$username, $email, $hash]);
+
+        // ── Success ──────────────────────────────
+
+        redirect('/login?registered=1');
+    }
+
+    // ── Login ─────────────────────────────────────
+
+    public static function login() {
+        verifyCsrfToken();
+
+        $email    = post('email');
+        $password = post('password');
+
+        $old = ['email' => $email];
+
+        // ── Validation ───────────────────────────
+
+        if (empty($email) || empty($password)) {
+            $error = 'All fields are required.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/login.php';
+            return;
+        }
+
+        // ── Find user ────────────────────────────
+
+        $pdo  = getDB();
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        // ── Check password ───────────────────────
+
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            $error = 'Invalid email or password.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/login.php';
+            return;
+        }
+
+        // ── Check if banned ──────────────────────
+
+        if ($user['is_banned']) {
+            $error = 'Your account has been suspended.';
+            $csrf_token = generateCsrfToken();
+            require __DIR__ . '/../public/views/login.php';
+            return;
+        }
+
+        // ── Create session ───────────────────────
+
+        session_regenerate_id(true);
+
+        $_SESSION['user_id']  = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role']     = $user['role'];
+
+        redirect('/home');
+    }
+
+    // ── Logout ────────────────────────────────────
+
+    public static function logout() {
+        session_unset();
+        session_destroy();
+        redirect('/login');
+    }
+}
