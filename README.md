@@ -44,7 +44,7 @@ A full-stack web application built with PHP, MySQL, and Apache, containerized wi
 ### 1. Clone the repository
 
 ```bash
-git clone (https://github.com/Moh-Ent/Apache-PHP-practice-blog)
+git clone https://github.com/Moh-Ent/Apache-PHP-practice-blog
 cd Apache-PHP-practice-blog
 ```
 
