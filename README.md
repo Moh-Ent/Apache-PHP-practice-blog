@@ -126,7 +126,7 @@ If the database volume already exists, changing `database.sql` will not automati
 myapp/
 ├── config/
 │   ├── database.example.php
-│   └── database.php          # Local configuration; not committed
+│   
 ├── src/
 │   ├── Auth.php
 │   ├── Post.php
@@ -163,7 +163,3 @@ Inside Docker Compose, the application connects to the database service using th
 MySQL initialization scripts run when the database data directory is first created. If the named volume already contains data, the initialization script will not run again automatically.
 
 For a fresh test, use a separate Compose project or remove the existing database volume only after confirming that its data can be safely discarded.
-
-## License
-
-Add your chosen license here if you intend to distribute the project publicly.
