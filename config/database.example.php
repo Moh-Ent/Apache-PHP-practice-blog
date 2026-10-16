@@ -1,9 +1,9 @@
 <?php
-// Copy this file to database.php and fill in your credentials
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'myapp');
-define('DB_USER', 'your_db_user');
-define('DB_PASS', 'your_db_password');
+
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+define('DB_NAME', getenv('DB_NAME') ?: 'myapp');
+define('DB_USER', getenv('DB_USER') ?: '');
+define('DB_PASS', getenv('DB_PASS') ?: '');
 
 function getDB() {
     static $pdo = null;
@@ -21,7 +21,9 @@ function getDB() {
                 ]
             );
         } catch (PDOException $e) {
-            die("Database connection failed.");
+            error_log('Database connection failed: ' . $e->getMessage());
+            http_response_code(500);
+            exit('Database connection failed.');
         }
     }
 

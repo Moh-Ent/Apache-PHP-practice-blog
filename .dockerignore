@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+config/database.php
+*.log
+*.save
+
+.DS_Store
+Thumbs.db
+.vscode
+.idea
